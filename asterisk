@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 echo "[*] Обновление системы..."
@@ -8,16 +7,18 @@ sudo apt-get upgrade -y
 
 echo "[*] Установка зависимостей..."
 sudo apt-get install -y build-essential git subversion wget \
-  libjansson-dev libxml2-dev libncurses-dev uuid-dev \
-  libsqlite3-dev sqlite3 libedit-dev autoconf automake \
-  libtool pkg-config
+  libjansson-dev sqlite3 libsqlite3-dev uuid-dev \
+  libxml2-dev libncurses-dev libedit-dev \
+  autoconf automake libtool pkg-config
 
 echo "[*] Переход в /usr/src и загрузка Asterisk..."
 cd /usr/src/
-sudo wget -O asterisk-20-current.tar.gz http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
+sudo wget -O asterisk-20-current.tar.gz https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
 sudo tar zxf asterisk-20-current.tar.gz
-cd asterisk-*/
-A_DIR=$(pwd)
+
+# Определим имя директории
+ASTERISK_DIR=$(tar -tf asterisk-20-current.tar.gz | head -1 | cut -d/ -f1)
+cd "$ASTERISK_DIR"
 
 echo "[*] Получение MP3-поддержки..."
 sudo contrib/scripts/get_mp3_source.sh
@@ -25,7 +26,7 @@ sudo contrib/scripts/get_mp3_source.sh
 echo "[*] Установка prereq-зависимостей от Asterisk..."
 sudo contrib/scripts/install_prereq install
 
-echo "[*] Конфигурация сборки Asterisk..."
+echo "[*] Конфигурация сборки..."
 sudo ./configure
 
 echo "[*] Включение поддержки MP3..."
@@ -39,13 +40,12 @@ sudo make basic-pbx
 sudo make config
 sudo ldconfig
 
-echo "[*] Запуск и включение Asterisk..."
-sudo systemctl start asterisk
-sudo systemctl enable asterisk
-
-echo "[*] Разрешение SIP и RTP портов..."
+echo "[*] Разрешение портов для SIP и RTP..."
 sudo ufw allow 5060/udp
 sudo ufw allow 10000:20000/udp
 
-echo -e "\n[+] Установка завершена!"
-echo "[*] Запусти консоль Asterisk: sudo asterisk -rvvv"
+echo "[*] Запуск и включение Asterisk в автозагрузку..."
+sudo systemctl start asterisk
+sudo systemctl enable asterisk
+
+echo "[✓] Установка завершена. Запусти консоль: sudo asterisk -rvvv"
