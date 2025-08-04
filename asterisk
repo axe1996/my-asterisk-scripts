@@ -1,51 +1,48 @@
 #!/bin/bash
+
 set -e
 
-echo "[*] Обновление системы..."
-sudo apt-get update
+echo "[INFO] Обновление системы..."
+sudo apt-get update -y
 sudo apt-get upgrade -y
 
-echo "[*] Установка зависимостей..."
-sudo apt-get install -y build-essential git subversion wget \
-  libjansson-dev sqlite3 libsqlite3-dev uuid-dev \
-  libxml2-dev libncurses-dev libedit-dev \
-  autoconf automake libtool pkg-config
+echo "[INFO] Установка зависимостей..."
+sudo apt-get install -y build-essential git-core subversion wget libjansson-dev sqlite autoconf automake libxml2-dev libncurses5-dev libtool
 
-echo "[*] Переход в /usr/src и загрузка Asterisk..."
+echo "[INFO] Скачивание Asterisk 20..."
 cd /usr/src/
-sudo wget -O asterisk-20-current.tar.gz https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
+sudo wget -q http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
 sudo tar zxf asterisk-20-current.tar.gz
+cd asterisk-*/
 
-# Определим имя директории
-ASTERISK_DIR=$(tar -tf asterisk-20-current.tar.gz | head -1 | cut -d/ -f1)
-cd "$ASTERISK_DIR"
-
-echo "[*] Получение MP3-поддержки..."
+echo "[INFO] Получение MP3 источников..."
 sudo contrib/scripts/get_mp3_source.sh
 
-echo "[*] Установка prereq-зависимостей от Asterisk..."
-sudo contrib/scripts/install_prereq install
+echo "[INFO] Установка дополнительных зависимостей..."
+sudo contrib/scripts/install_prereq install -y
 
-echo "[*] Конфигурация сборки..."
+echo "[INFO] Конфигурация Asterisk..."
 sudo ./configure
 
-echo "[*] Включение поддержки MP3..."
-sudo menuselect/menuselect --enable format_mp3 menuselect.makeopts
+echo "[INFO] Открытие menuselect (интерактивно, ESC → X для выхода)..."
+sudo make menuselect.makeopts
 
-echo "[*] Сборка и установка Asterisk..."
+echo "[INFO] Сборка Asterisk..."
 sudo make -j$(nproc)
+
+echo "[INFO] Установка Asterisk..."
 sudo make install
 sudo make samples
 sudo make basic-pbx
 sudo make config
 sudo ldconfig
 
-echo "[*] Разрешение портов для SIP и RTP..."
-sudo ufw allow 5060/udp
-sudo ufw allow 10000:20000/udp
-
-echo "[*] Запуск и включение Asterisk в автозагрузку..."
+echo "[INFO] Запуск и добавление в автозагрузку..."
 sudo systemctl start asterisk
 sudo systemctl enable asterisk
 
-echo "[✓] Установка завершена. Запусти консоль: sudo asterisk -rvvv"
+echo "[INFO] Настройка фаервола..."
+sudo ufw allow 5060/udp
+sudo ufw allow 10000:20000/udp
+
+echo "[DONE] Установка завершена. Asterisk должен работать."
