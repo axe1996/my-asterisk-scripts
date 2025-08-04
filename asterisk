@@ -17,6 +17,7 @@ cd /usr/src/
 sudo wget -O asterisk-20-current.tar.gz http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
 sudo tar zxf asterisk-20-current.tar.gz
 cd asterisk-*/
+A_DIR=$(pwd)
 
 echo "[*] Получение MP3-поддержки..."
 sudo contrib/scripts/get_mp3_source.sh
